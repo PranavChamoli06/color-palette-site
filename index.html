@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dynamic Rounded Palette Download</title>
+  <style>
+    body {
+      background-color: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    canvas {
+      background-color: #111;
+      margin-top: 20px;
+      border: 2px solid white;
+    }
+    button, input, select {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+      border: none;
+    }
+    button {
+      background-color: white;
+      color: black;
+    }
+    input[type="color"] {
+      width: 50px;
+      height: 50px;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+    }
+    input[type="number"] {
+      width: 70px;
+    }
+    .color-pickers {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Custom Rounded Color Palette</h1>
+
+<!-- Mode Selection -->
+<label for="modeSelect">Mode: </label>
+<select id="modeSelect" onchange="updateMode()">
+  <option value="shades">Shades of a Base Color</option>
+  <option value="custom">Custom Colors for Each Palette</option>
+</select>
+
+<br>
+
+<!-- Base Color -->
+<div id="baseColorSection">
+  <label for="baseColor">Choose Base Color: </label>
+  <input type="color" id="baseColor" value="#ffffff">
+</div>
+
+<!-- Custom Color Pickers (hidden initially) -->
+<div id="customColorsSection" style="display: none;">
+  <div id="colorPickers" class="color-pickers"></div>
+</div>
+
+<br>
+
+<!-- Background Color -->
+<label for="bgColor">Background Color: </label>
+<input type="color" id="bgColor" value="#111111">
+
+<br>
+
+<!-- Number of Palettes/Shades -->
+<label for="shadeCount">Number of Palettes: </label>
+<input type="number" id="shadeCount" min="2" max="20" value="9" onchange="generateColorPickers()">
+
+<br>
+
+<!-- Smooth Gradient for Shades -->
+<label>
+  <input type="checkbox" id="smoothGradient"> Smooth Gradient (only for Shades mode)
+</label>
+
+<br>
+
+<button onclick="drawPalette()">Generate Palette</button>
+<button onclick="downloadPalette()">Download Palette</button>
+
+<canvas id="paletteCanvas" width="1200" height="400"></canvas>
+
+<script>
+const canvas = document.getElementById('paletteCanvas');
+const ctx = canvas.getContext('2d');
+
+const rectWidth = 100;
+const rectHeight = 300;
+const overlap = 40;
+const startX = 100;
+const startY = 50;
+const borderRadius = 50;
+
+function hexToRgb(hex) {
+  hex = hex.replace(/^#/, '');
+  if (hex.length === 3) {
+    hex = hex.split('').map(c => c + c).join('');
+  }
+  const num = parseInt(hex, 16);
+  return {
+    r: (num >> 16) & 255,
+    g: (num >> 8) & 255,
+    b: num & 255
+  };
+}
+
+function rgbToHex(r, g, b) {
+  return "#" + [r, g, b].map(x => {
+    const hex = x.toString(16);
+    return hex.length === 1 ? "0" + hex : hex;
+  }).join('');
+}
+
+function generateShades(baseColor, count) {
+  const shades = [];
+  const base = hexToRgb(baseColor);
+
+  for (let i = 0; i < count; i++) {
+    const factor = 1 - (i / (count - 1));
+    const r = Math.round(base.r * factor + 17 * (1 - factor));
+    const g = Math.round(base.g * factor + 17 * (1 - factor));
+    const b = Math.round(base.b * factor + 17 * (1 - factor));
+    shades.push(rgbToHex(r, g, b));
+  }
+  return shades;
+}
+
+function drawRoundedRect(x, y, width, height, radius, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function updateMode() {
+  const mode = document.getElementById('modeSelect').value;
+  if (mode === 'custom') {
+    document.getElementById('baseColorSection').style.display = 'none';
+    document.getElementById('customColorsSection').style.display = 'block';
+    generateColorPickers();
+  } else {
+    document.getElementById('baseColorSection').style.display = 'block';
+    document.getElementById('customColorsSection').style.display = 'none';
+  }
+}
+
+function generateColorPickers() {
+  const count = parseInt(document.getElementById('shadeCount').value);
+  const colorPickersDiv = document.getElementById('colorPickers');
+  colorPickersDiv.innerHTML = '';
+
+  for (let i = 0; i < count; i++) {
+    const input = document.createElement('input');
+    input.type = 'color';
+    input.value = '#ffffff';
+    input.className = 'customColor';
+    colorPickersDiv.appendChild(input);
+  }
+}
+
+function drawPalette() {
+  const mode = document.getElementById('modeSelect').value;
+  const count = parseInt(document.getElementById('shadeCount').value);
+  const smooth = document.getElementById('smoothGradient').checked;
+  const bgColor = document.getElementById('bgColor').value;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  if (mode === 'shades') {
+    const baseColor = document.getElementById('baseColor').value;
+
+    if (smooth) {
+      const grad = ctx.createLinearGradient(startX, 0, startX + (rectWidth - overlap) * (count - 1), 0);
+      grad.addColorStop(0, baseColor);
+      grad.addColorStop(1, bgColor);
+      let x = startX;
+      for (let i = 0; i < count; i++) {
+        ctx.fillStyle = grad;
+        drawRoundedRect(x, startY, rectWidth, rectHeight, borderRadius);
+        x += rectWidth - overlap;
+      }
+    } else {
+      const shades = generateShades(baseColor, count);
+      let x = startX;
+      for (let i = 0; i < shades.length; i++) {
+        drawRoundedRect(x, startY, rectWidth, rectHeight, borderRadius, shades[i]);
+        x += rectWidth - overlap;
+      }
+    }
+  } else {
+    const customColors = document.querySelectorAll('.customColor');
+    let x = startX;
+    customColors.forEach(input => {
+      drawRoundedRect(x, startY, rectWidth, rectHeight, borderRadius, input.value);
+      x += rectWidth - overlap;
+    });
+  }
+}
+
+function downloadPalette() {
+  const link = document.createElement('a');
+  link.download = 'custom_palette.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+// Draw default palette on load
+drawPalette();
+</script>
+
+</body>
+</html>
