@@ -65,10 +65,3 @@ palette-generator/
 This project is open-source and available under the [MIT License](LICENSE).
 
 ---
-
-## 🧕‍♂️ Author
-
-**Pranav Chamoli**
-
-> B.Tech CSE Student | Systems Developer | UI Enthusiast
-> [GitHub: @PranavChamoli06](https://github.com/PranavChamoli06)
