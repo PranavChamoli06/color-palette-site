@@ -51,12 +51,6 @@ palette-generator/
 
 ---
 
-## 📸 Screenshots
-
-> *(Add screenshots here after running the tool, especially one showing both modes.)*
-
----
-
 ## 💡 Future Improvements
 
 * Save/load palette presets
